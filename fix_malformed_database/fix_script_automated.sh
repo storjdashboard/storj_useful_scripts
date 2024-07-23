@@ -82,7 +82,21 @@ fix_database() {
         echo "Cleaning up..."
         rm dump.sql
 
-        echo "The database $db_path has been successfully fixed and saved to $fixed_db_path"
+        echo "Checking integrity of the fixed database..."
+        fixed_integrity_check=$(sqlite3 "$fixed_db_path" "PRAGMA integrity_check;")
+
+        if [[ $fixed_integrity_check == "ok" ]]; then
+            echo "The fixed database $fixed_db_path passed the integrity check."
+            read -p "Do you want to replace the original database with the fixed database? (yes/no): " replace_response
+            if [[ $replace_response == "yes" ]]; then
+                mv "$fixed_db_path" "$db_path"
+                echo "Replaced the original database with the fixed database."
+            else
+                echo "Kept the fixed database in $fixed_db_path."
+            fi
+        else
+            echo "The fixed database $fixed_db_path still failed the integrity check."
+        fi
     else
         echo "The database $db_path is not malformed."
     fi
