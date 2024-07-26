@@ -13,6 +13,13 @@ This repository contains a bash script designed to fix malformed SQLite database
 ***********************************************************
 
 
+## Recent Updates (July 2024)
+
+- **File Copy Verification**: The script now ensures that all files are copied instead of moved. After copying, it verifies that the file sizes match to ensure the copy operation was successful.
+- **Directory Permission Check**: The script checks if the specified directories have read and write permissions for the current user before performing any tasks.
+- **Improved Backup Process**: The script verifies the integrity of the backup by comparing file sizes.
+
+
 ## Usage
 
 1. **Clone the repository:**
