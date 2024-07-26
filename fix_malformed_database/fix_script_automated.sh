@@ -34,6 +34,14 @@ if ! command -v sqlite3 &> /dev/null; then
     exit 1
 fi
 
+# Check if the directories have read/write permissions
+for dir in "$db_directory" "$backup_directory" "$fixed_db_directory"; do
+    if [ ! -r "$dir" ] || [ ! -w "$dir" ]; then
+        echo "The directory $dir does not have read/write permissions for the current user."
+        exit 1
+    fi
+done
+
 # Creating directories if they do not exist
 mkdir -p "$backup_directory"
 mkdir -p "$fixed_db_directory"
@@ -56,6 +64,12 @@ fix_database() {
         cp "$db_path" "$backup_path"
         if [ $? -ne 0 ]; then
             echo "Failed to backup the database $db_path."
+            return 1
+        fi
+
+        # Verify the backup was successful
+        if [ $(stat -c%s "$db_path") -ne $(stat -c%s "$backup_path") ]; then
+            echo "Backup verification failed for $db_path."
             return 1
         fi
 
@@ -89,7 +103,16 @@ fix_database() {
             echo "The fixed database $fixed_db_path passed the integrity check."
             read -p "Do you want to replace the original database with the fixed database? (yes/no): " replace_response
             if [[ $replace_response == "yes" ]]; then
-                mv "$fixed_db_path" "$db_path"
+                cp "$fixed_db_path" "$db_path"
+                if [ $? -ne 0 ]; then
+                    echo "Failed to replace the original database with the fixed database."
+                    return 1
+                fi
+                # Verify the replacement was successful
+                if [ $(stat -c%s "$fixed_db_path") -ne $(stat -c%s "$db_path") ]; then
+                    echo "Replacement verification failed for $db_path."
+                    return 1
+                fi
                 echo "Replaced the original database with the fixed database."
             else
                 echo "Kept the fixed database in $fixed_db_path."
